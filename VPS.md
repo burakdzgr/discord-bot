@@ -30,18 +30,43 @@ npm install --omit=dev
 
 ## 3. Ortam değişkenlerini ayarla (.env)
 
-`.env` repoda yok (gizli). Sunucuda elle oluştur:
+`.env` repoda yok (gizli). Sunucuda elle oluştur. Aşağıyı yapıştır, sonra
+`XXXX/YYYY`, kanal webhook'ları, ID'ler ve token'ı kendi değerlerinle doldur:
 
 ```bash
 cat > .env <<'EOF'
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/XXXX/YYYY
 PORT=3000
-BOT_USERNAME=Arşiv Botu
+
+# Kimlik
+BOT_USERNAME=Drakkar Archive
 BOT_AVATAR_URL=
+
+# Varsayılan webhook (type eşleşmezse buraya düşer)
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/XXXX/YYYY
+FORUM_CHANNEL_ID=
+
+# Tür bazlı kanallar (kullandıklarını doldur, gerisini boş bırak)
+MOVIE_WEBHOOK_URL=
+MOVIE_CHANNEL_ID=
+SERIES_WEBHOOK_URL=
+SERIES_CHANNEL_ID=
+ANIME_WEBHOOK_URL=
+ANIME_CHANNEL_ID=
+ADULT_WEBHOOK_URL=
+ADULT_CHANNEL_ID=
+
+# Forum etiketleri + Trending (tek token tüm kanalları yönetir)
+BOT_TOKEN=
+TRENDING_TAG_NAME=Trending
+TRENDING_TOP_N=10
+TRENDING_INTERVAL_MIN=30
+
+# Güvenlik (boşsa kapalı)
 CALLBACK_SECRET=
 EOF
 ```
 
+> `nano .env` ile düzenleyebilirsin. Webhook/kanal ID alımı için bkz. [BOT_SETUP.md](BOT_SETUP.md).
 > Güvenlik açmak istediğinde `CALLBACK_SECRET` satırına bir gizli anahtar yaz.
 
 ## 4. PM2 ile başlat (7/24 + reboot sonrası otomatik)
