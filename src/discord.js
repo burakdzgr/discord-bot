@@ -5,28 +5,37 @@ const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const USERNAME = process.env.BOT_USERNAME?.trim() || undefined;
 const AVATAR_URL = process.env.BOT_AVATAR_URL?.trim() || undefined;
 
-// Normalize edilmiş içerikten şık bir Discord embed'i kurar.
+// Normalize edilmiş içerikten "sinematik / sade" bir Discord embed'i kurar:
+// üstte küçük kategori etiketi, büyük başlık, kısa açıklama, büyük kapak görseli.
 function buildEmbed(content) {
   const { title, description, image, url, rawType, year, quality, category } = content;
 
-  const fields = [];
-  if (rawType) fields.push({ name: "Tür", value: trunc(rawType, 256), inline: true });
-  if (year) fields.push({ name: "Yıl", value: trunc(year, 256), inline: true });
-  if (quality) fields.push({ name: "Kalite", value: trunc(quality, 256), inline: true });
+  // Üst etiket satırı (author): "🎬 Film · Bilim Kurgu · 2010 · 1080p"
+  const tags = [`${category.emoji} ${category.label}`];
+  if (rawType && !sameWord(rawType, category.label) && !sameWord(rawType, category.key)) {
+    tags.push(rawType);
+  }
+  if (year) tags.push(year);
+  if (quality) tags.push(quality);
 
   const embed = {
-    title: trunc(`${category.emoji} ${title || "İsimsiz içerik"}`, 256),
+    author: { name: trunc(tags.join(" · "), 256) },
+    title: trunc(title || "İsimsiz içerik", 256),
     color: category.color,
     timestamp: new Date().toISOString(),
-    footer: { text: `Arşive eklendi · ${category.label}` },
+    footer: { text: "Arşive eklendi" },
   };
 
   if (description) embed.description = trunc(description, 4000);
-  if (url && /^https?:\/\//i.test(url)) embed.url = url;
+  if (url && /^https?:\/\//i.test(url)) embed.url = url;          // başlık tıklanabilir olur
   if (image && /^https?:\/\//i.test(image)) embed.image = { url: image };
-  if (fields.length) embed.fields = fields;
 
   return embed;
+}
+
+// İki metnin (büyük/küçük harf, boşluk farkı gözetmeden) aynı kelime olup olmadığı.
+function sameWord(a, b) {
+  return String(a).toLowerCase().replace(/\s+/g, "") === String(b).toLowerCase().replace(/\s+/g, "");
 }
 
 function trunc(str, max) {
