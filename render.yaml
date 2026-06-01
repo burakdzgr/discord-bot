@@ -58,5 +58,5 @@ services:
         value: https://japierdolevid.com/api/v1
       - key: JPV_POLL_MIN
         value: "5"
-      - key: JPV_TYPES
-        value: movie:Movie,series:Series
+      - key: JPV_SEED_COUNT
+        value: "10"

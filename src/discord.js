@@ -52,9 +52,8 @@ function trunc(str, max) {
 
 // İçeriği, çözülen ROTANIN webhook'una gönderir.
 //   route: { webhookUrl, channelId, ... }  (config.js -> resolveRoute)
-//   appliedTags: uygulanacak forum etiketi ID'leri (opsiyonel)
 // Hata olursa fırlatır (çağıran tarafta loglanır).
-export async function sendToDiscord(route, content, rawPayload, appliedTags = []) {
+export async function sendToDiscord(route, content, rawPayload) {
   if (!route || !route.webhookUrl) {
     throw new Error("Bu içerik için bir webhook/rota tanımlı değil (type eşleşmedi ve varsayılan yok).");
   }
@@ -73,12 +72,9 @@ export async function sendToDiscord(route, content, rawPayload, appliedTags = []
     body.content = "⚠️ İçerik alanları otomatik tanınamadı, ham veri:\n```json\n" + raw + "\n```";
   }
 
-  // Forum post başlığı: sade, sadece içerik adı (emoji yok). Kategori emojisi embed içinde.
+  // Forum post başlığı: sade, sadece içerik adı. Kategori emojisi embed içinde.
   const threadName = trunc(content.title || content.category.label, 100);
-
-  // Forum gönderisi gövdesi (başlık + varsa etiketler).
   const forumBody = { ...body, thread_name: threadName };
-  if (appliedTags.length) forumBody.applied_tags = appliedTags;
 
   // channelId tanımlıysa rotanın forum kanalı olduğunu biliyoruz -> doğrudan thread_name ile gönder.
   const forumMode = Boolean(route.channelId);

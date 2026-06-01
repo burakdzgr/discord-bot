@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import { initBot } from "./discordBot.js";
 import { routeSummary } from "./config.js";
 import { processContent } from "./process.js";
 import { startFetcher, fetcherEnabled, postLatest } from "./jpvFetcher.js";
@@ -78,10 +77,8 @@ app.get("/fetch-latest", async (req, res) => {
     return res.status(400).json({ ok: false, error: "JPV fetcher kapalı (JPV_EMAIL/JPV_PASSWORD yok)." });
   }
   try {
-    const src = String(req.query.type || "movie");
-    const target = String(req.query.target || "Movie");
     const count = Math.min(Number(req.query.count) || 1, 10);
-    const sent = await postLatest(src, target, count);
+    const sent = await postLatest(count);
     return res.json({ ok: true, sent });
   } catch (err) {
     console.error("❌ fetch-latest hatası:", err.message);
@@ -103,8 +100,6 @@ app.listen(PORT, () => {
   console.log(routeSummary());
   console.log(`📡 JPV fetcher:    ${fetcherEnabled() ? "AÇIK" : "KAPALI (JPV_EMAIL/JPV_PASSWORD yok)"}`);
   console.log("────────────────────────────────────────────");
-  // Bot Token varsa tüm kanalların etiketlerini yükle + Trending döngülerini başlat.
-  initBot();
   // JPV kimlik bilgileri varsa periyodik çekmeyi başlat.
   startFetcher();
 });
