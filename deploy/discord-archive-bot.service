@@ -1,0 +1,29 @@
+# systemd ile (PM2 yerine alternatif) VPS'te 7/24 çalıştırma.
+# Kurulum:
+#   sudo cp deploy/discord-archive-bot.service /etc/systemd/system/
+#   (aşağıdaki User ve WorkingDirectory'yi kendine göre düzenle)
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now discord-archive-bot
+#   sudo systemctl status discord-archive-bot
+#   journalctl -u discord-archive-bot -f      # canlı log
+
+[Unit]
+Description=Arsiv -> Discord callback botu
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Botu çalıştıracak kullanıcı (root yerine ayrı bir kullanıcı önerilir)
+User=ubuntu
+# Kodun bulunduğu mutlak yol
+WorkingDirectory=/home/ubuntu/discord-bot
+# .env dosyasını oku (DISCORD_WEBHOOK_URL vb.)
+EnvironmentFile=/home/ubuntu/discord-bot/.env
+# node yolunu 'which node' ile teyit et; nvm kullanıyorsan tam yolu yaz
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
