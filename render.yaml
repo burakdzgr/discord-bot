@@ -9,8 +9,27 @@ services:
     startCommand: node src/index.js
     healthCheckPath: /
     envVars:
-      # DISCORD_WEBHOOK_URL'i Render panelinden (gizli) gir — repoya yazma.
+      # Varsayılan webhook (type eşleşmezse buraya düşer). Panelden gir.
       - key: DISCORD_WEBHOOK_URL
+        sync: false
+      - key: FORUM_CHANNEL_ID
+        sync: false
+      # ── Tür bazlı kanallar (her birini panelden gir) ──
+      - key: MOVIE_WEBHOOK_URL
+        sync: false
+      - key: MOVIE_CHANNEL_ID
+        sync: false
+      - key: SERIES_WEBHOOK_URL
+        sync: false
+      - key: SERIES_CHANNEL_ID
+        sync: false
+      - key: ANIME_WEBHOOK_URL
+        sync: false
+      - key: ANIME_CHANNEL_ID
+        sync: false
+      - key: ADULT_WEBHOOK_URL
+        sync: false
+      - key: ADULT_CHANNEL_ID
         sync: false
       - key: BOT_USERNAME
         value: Drakkar Archive
@@ -20,10 +39,8 @@ services:
       # Güvenlik açmak istediğinde panelden doldur (boşsa kapalı).
       - key: CALLBACK_SECRET
         sync: false
-      # Forum etiketleri + Trending için Bot Token ve forum kanal ID'si (gizli, panelden gir).
+      # Tek Bot Token tüm kanalları yönetir (gizli, panelden gir).
       - key: BOT_TOKEN
-        sync: false
-      - key: FORUM_CHANNEL_ID
         sync: false
       # Trending ayarları (varsayılanlar yeterli; istersen değiştir).
       - key: TRENDING_TAG_NAME

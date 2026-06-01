@@ -1,7 +1,6 @@
 // Discord webhook'una mesaj gönderme katmanı.
 // Node 18+ yerleşik global fetch kullanılır (ekstra paket gerekmez).
 
-const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 const USERNAME = process.env.BOT_USERNAME?.trim() || undefined;
 const AVATAR_URL = process.env.BOT_AVATAR_URL?.trim() || undefined;
 
@@ -43,15 +42,13 @@ function trunc(str, max) {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
 
-// FORUM_CHANNEL_ID tanımlıysa webhook'un forum kanalına bağlı olduğunu biliyoruz;
-// böylece her seferinde başarısız ilk isteği denemeden doğrudan thread_name ile göndeririz.
-const FORUM_MODE = Boolean(process.env.FORUM_CHANNEL_ID?.trim());
-
-// İçeriği Discord'a gönderir. appliedTags: uygulanacak forum etiketi ID'leri (opsiyonel).
+// İçeriği, çözülen ROTANIN webhook'una gönderir.
+//   route: { webhookUrl, channelId, ... }  (config.js -> resolveRoute)
+//   appliedTags: uygulanacak forum etiketi ID'leri (opsiyonel)
 // Hata olursa fırlatır (çağıran tarafta loglanır).
-export async function sendToDiscord(content, rawPayload, appliedTags = []) {
-  if (!WEBHOOK_URL) {
-    throw new Error("DISCORD_WEBHOOK_URL tanımlı değil (.env dosyasını kontrol et).");
+export async function sendToDiscord(route, content, rawPayload, appliedTags = []) {
+  if (!route || !route.webhookUrl) {
+    throw new Error("Bu içerik için bir webhook/rota tanımlı değil (type eşleşmedi ve varsayılan yok).");
   }
 
   const embed = buildEmbed(content);
@@ -75,16 +72,18 @@ export async function sendToDiscord(content, rawPayload, appliedTags = []) {
   const forumBody = { ...body, thread_name: threadName };
   if (appliedTags.length) forumBody.applied_tags = appliedTags;
 
+  // channelId tanımlıysa rotanın forum kanalı olduğunu biliyoruz -> doğrudan thread_name ile gönder.
+  const forumMode = Boolean(route.channelId);
+
   let res;
-  if (FORUM_MODE) {
-    // Forum olduğunu biliyoruz — doğrudan gönder.
-    res = await post(forumBody);
+  if (forumMode) {
+    res = await post(route.webhookUrl, forumBody);
   } else {
     // Kanal tipini bilmiyoruz: önce normal dene, forum hatasında (220001) thread_name ile tekrarla.
-    res = await post(body);
+    res = await post(route.webhookUrl, body);
     if (res.status === 400) {
       const errText = await res.clone().text().catch(() => "");
-      if (errText.includes("220001")) res = await post(forumBody);
+      if (errText.includes("220001")) res = await post(route.webhookUrl, forumBody);
     }
   }
 
@@ -94,9 +93,9 @@ export async function sendToDiscord(content, rawPayload, appliedTags = []) {
   }
 }
 
-// Webhook'a tek bir POST isteği atar.
-function post(body) {
-  return fetch(WEBHOOK_URL, {
+// Belirtilen webhook'a tek bir POST isteği atar.
+function post(webhookUrl, body) {
+  return fetch(webhookUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

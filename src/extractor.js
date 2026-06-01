@@ -142,6 +142,10 @@ export function extractContent(payload) {
   const quality =
     asText(findValue(payload, ["quality", "kalite", "resolution", "cozunurluk", "çözünürlük"]));
 
+  // type: hangi kanala yönlendirileceğini belirleyen ana alan (Movie/Series/Anime/Adult).
+  const type =
+    asText(findValue(payload, ["type", "tip", "contenttype", "mediatype"]));
+
   // Kategori tahmini: sadece ilk eşleşen "tür" değil, tüm kategori-benzeri alanları
   // (tip/tür/kategori/genre vb.) + başlık + açıklamayı birlikte değerlendir.
   const categoryHints = collectValues(payload, [
@@ -149,7 +153,7 @@ export function extractContent(payload) {
   ]);
   const category = detectCategory(categoryHints, title, description);
 
-  return { title, description, image, url, rawType, year, quality, category };
+  return { title, description, image, url, rawType, year, quality, type, category };
 }
 
 // Payload'dan uygulanacak FORUM ETİKETİ adlarını türetir.

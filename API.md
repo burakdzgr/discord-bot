@@ -27,6 +27,7 @@ Sadece `title` zorunludur. Görsel şiddetle önerilir (kapak için).
 
 ```json
 {
+  "type": "Movie",
   "title": "Inception",
   "description": "Rüya içinde rüya: bilinçaltına fikir yerleştirme operasyonu.",
   "image": "https://cdn.ornek.com/posters/inception-yatay.jpg",
@@ -43,12 +44,15 @@ Sadece `title` zorunludur. Görsel şiddetle önerilir (kapak için).
 }
 ```
 
+> **`type` hangi kanala gideceğini belirler** (aşağıdaki "Kanal yönlendirme" bölümüne bak).
+
 ---
 
 ## Alanlar
 
 | Alan          | Tip            | Zorunlu | Açıklama |
 |---------------|----------------|:------:|----------|
+| `type`        | string         | ⭐ önerilen | İçeriğin **kanalını** belirler: `Movie` \| `Series` \| `Anime` \| `Adult`. Boşsa `category`/metinden çıkarılır; yine de bulunamazsa varsayılan kanala gider. |
 | `title`       | string         | ✅ | İçerik adı. Forum **post başlığı** olur. |
 | `image`       | string (URL)   | ⭐ önerilen | **Kapak görseli** (yatay/landscape tercih edilir). Büyük gösterilir. |
 | `category`    | string         | ⭐ önerilen | `film` \| `dizi` \| `anime` \| `adult`. Renk + emoji + kategori etiketini belirler. Boşsa metinden otomatik tahmin edilir. |
@@ -68,6 +72,21 @@ Sadece `title` zorunludur. Görsel şiddetle önerilir (kapak için).
 > (`data.name`, `image.url`) aranır. Yine de **yukarıdaki standart adları** kullanmaları en sağlamı.
 
 ---
+
+## Kanal yönlendirme (`type`)
+
+`type` alanı içeriğin **hangi kanala** post edileceğini belirler:
+
+| `type` değeri | Kanal | Tanınan eş anlamlılar |
+|---------------|-------|------------------------|
+| `Movie`  | Film kanalı   | movie, film, sinema |
+| `Series` | Dizi kanalı   | series, dizi, tv, show |
+| `Anime`  | Anime kanalı  | anime, manga |
+| `Adult`  | Adult kanalı  | adult, 18+, xxx, yetişkin, nsfw |
+
+- Büyük/küçük harf önemsiz (`movie` = `Movie` = `MOVIE`).
+- `type` yoksa içerikten (kategori/metin) tahmin edilir.
+- Tanınmayan veya kanalı tanımlı olmayan bir tür **varsayılan kanala** düşer (kaybolmaz).
 
 ## Forum etiketleri (kanaldaki mevcut etiketler)
 
@@ -90,7 +109,7 @@ New Release · Trending · Featured · Classic · Global · Asia · EU · US · 
 
 | Durum | HTTP | Gövde |
 |-------|------|-------|
-| Başarılı | `200` | `{"ok":true,"title":"Inception","category":"Film"}` |
+| Başarılı | `200` | `{"ok":true,"title":"Inception","type":"Movie","channel":"Film","category":"Film","tags":["New Release","US"]}` |
 | Boş/geçersiz gövde | `400` | `{"ok":false,"error":"..."}` |
 | Discord'a iletilemedi | `502` | `{"ok":false,"error":"..."}` |
 | (Güvenlik açıkken) yetkisiz | `401` | `{"ok":false,"error":"unauthorized"}` |

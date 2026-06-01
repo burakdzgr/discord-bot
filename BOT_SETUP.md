@@ -33,28 +33,39 @@ Bu izin değeri (`17179935744`) şunları kapsar:
 Linki aç → sunucunu seç → **Yetkilendir**. Sonra Discord'da kontrol et:
 forum kanalının (movie releases) bot rolüne **erişimi** ve **Manage Threads** yetkisi olsun.
 
-## 3. Forum kanal ID'sini al
+## 3. Kanalların webhook'larını ve ID'lerini al (4 kanal)
 
-1. Discord → **Kullanıcı Ayarları → Gelişmiş → Geliştirici Modu**'nu aç.
-2. Forum kanalına (movie releases / türkçe-yamalar) **sağ tık → Kanal Kimliğini Kopyala**.
-3. Bu değer senin `FORUM_CHANNEL_ID`'ndir.
+Her tür ayrı bir kanala gittiği için **her kanal için bir webhook + bir kanal ID** gerekiyor.
+
+**Webhook (her kanal için):** İlgili forum kanalı → Ayarlar (dişli) → **Entegrasyonlar → Webhooks → Yeni Webhook** → adını/avatarını ayarla → **Webhook URL'sini kopyala**.
+
+**Kanal ID (her kanal için):** **Kullanıcı Ayarları → Gelişmiş → Geliştirici Modu**'nu aç → kanala **sağ tık → Kanal Kimliğini Kopyala**.
 
 ## 4. Render'a gizli değişkenleri gir
 
-Render panel → servisin → **Environment** → şunları ekle/doldur:
+Render panel → servisin → **Environment** → şunları doldur (kullandığın türler için):
 
 | Key | Değer |
 |-----|-------|
-| `BOT_TOKEN` | (1. adımda kopyaladığın token) |
-| `FORUM_CHANNEL_ID` | (3. adımdaki kanal ID) |
+| `BOT_TOKEN` | 1. adımdaki token (tek token tüm kanalları yönetir) |
+| `MOVIE_WEBHOOK_URL` / `MOVIE_CHANNEL_ID` | Film kanalı webhook + ID |
+| `SERIES_WEBHOOK_URL` / `SERIES_CHANNEL_ID` | Dizi kanalı webhook + ID |
+| `ANIME_WEBHOOK_URL` / `ANIME_CHANNEL_ID` | Anime kanalı webhook + ID |
+| `ADULT_WEBHOOK_URL` / `ADULT_CHANNEL_ID` | Adult kanalı webhook + ID |
 
-(`TRENDING_TAG_NAME`, `TRENDING_TOP_N`, `TRENDING_INTERVAL_MIN` zaten varsayılanlı — dokunmana gerek yok.)
+> `*_CHANNEL_ID` sadece **etiket/Trending** için gerekir; sadece webhook girersen post yine
+> gider ama o kanalda etiket/Trending olmaz. `DISCORD_WEBHOOK_URL` (varsayılan) eşleşmeyen
+> türler için yedektir.
 
-Kaydet → Render otomatik yeniden başlatır. Başlangıç logunda şunu görmelisin:
+**Botu davet ederken** (2. adım) botun **4 kanalın hepsinde** View Channels + Read Message
+History + Manage Threads yetkisi olduğundan emin ol (kategori/rol izinleri kanal bazında).
+
+Kaydet → Render otomatik yeniden başlatır. Başlangıç logunda her kanal için şunu görmelisin:
 
 ```
-🏷️  Etiketler yüklendi (11): New Release, Trending, Featured, Classic, Global, Asia, EU, US, Multi Audio, Dubbed, Subbed
-🔥 Trending açık: her 30 dk, en çok beğeni alan ilk 10 post etiketlenir.
+🏷️  [movie-releases] etiketler (11): New Release, Trending, Featured, ...
+🔥 [movie-releases] Trending açık: her 30 dk, en çok beğeni alan ilk 10 post.
+🏷️  [adult-releases] etiketler (...): ...
 ```
 
 ---

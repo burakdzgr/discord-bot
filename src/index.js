@@ -3,6 +3,7 @@ import express from "express";
 import { extractContent, deriveTags } from "./extractor.js";
 import { sendToDiscord } from "./discord.js";
 import { initBot, tagIdsFor } from "./discordBot.js";
+import { resolveRoute, routeSummary } from "./config.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const CALLBACK_SECRET = process.env.CALLBACK_SECRET?.trim();
@@ -47,15 +48,32 @@ app.post(["/callback", "/webhook"], async (req, res) => {
 
   try {
     const content = extractContent(payload);
+
+    // type (ya da algılanan kategori) -> hangi kanala gideceğini belirle.
+    const route = resolveRoute(content.type, content.category.key);
+    if (!route) {
+      const msg = `'${content.type || content.category.label}' türü için tanımlı kanal/webhook yok.`;
+      console.error("❌ Yönlendirme hatası:", msg);
+      return res.status(400).json({ ok: false, error: msg });
+    }
+
     const tagNames = deriveTags(payload);
-    const tagIds = tagIdsFor(tagNames); // bot kapalıysa boş döner
-    await sendToDiscord(content, payload, tagIds);
+    const tagIds = tagIdsFor(route.channelId, tagNames); // bot kapalıysa boş döner
+    await sendToDiscord(route, content, payload, tagIds);
+
     console.log(
-      `✅ Discord'a gönderildi: ${content.title || "(başlık tanınamadı)"} [${content.category.label}]` +
+      `✅ [${route.label}] gönderildi: ${content.title || "(başlık tanınamadı)"} [${content.category.label}]` +
         (tagNames.length ? ` · etiketler: ${tagNames.join(", ")}` : "")
     );
     // Dış sisteme hızlı yanıt dön.
-    return res.json({ ok: true, title: content.title ?? null, category: content.category.label, tags: tagNames });
+    return res.json({
+      ok: true,
+      title: content.title ?? null,
+      type: content.type ?? null,
+      channel: route.label,
+      category: content.category.label,
+      tags: tagNames,
+    });
   } catch (err) {
     console.error("❌ Gönderim hatası:", err.message);
     return res.status(502).json({ ok: false, error: err.message });
@@ -72,7 +90,9 @@ app.listen(PORT, () => {
   console.log(`📥 Callback URL:  http://localhost:${PORT}/callback`);
   console.log(`💚 Sağlık:        http://localhost:${PORT}/`);
   console.log(`🔐 Güvenlik:      ${CALLBACK_SECRET ? "AÇIK (secret gerekli)" : "KAPALI (test modu)"}`);
+  console.log("📡 Kanal yönlendirme:");
+  console.log(routeSummary());
   console.log("────────────────────────────────────────────");
-  // Bot Token varsa etiketleri yükle + Trending döngüsünü başlat (yoksa sessizce atlar).
+  // Bot Token varsa tüm kanalların etiketlerini yükle + Trending döngülerini başlat.
   initBot();
 });
