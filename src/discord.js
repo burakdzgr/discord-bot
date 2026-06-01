@@ -54,14 +54,30 @@ export async function sendToDiscord(content, rawPayload) {
     body.content = "⚠️ İçerik alanları otomatik tanınamadı, ham veri:\n```json\n" + raw + "\n```";
   }
 
-  const res = await fetch(WEBHOOK_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  // İlk deneme: normal metin kanalı varsayımıyla gönder.
+  let res = await post(body);
+
+  // Webhook bir FORUM/MEDIA kanalına bağlıysa Discord thread_name ister (kod 220001).
+  // Bu durumda her içerik için bir forum gönderisi başlığı ekleyip tekrar deneriz.
+  if (res.status === 400) {
+    const errText = await res.clone().text().catch(() => "");
+    if (errText.includes("220001")) {
+      const threadName = trunc(`${content.category.emoji} ${content.title || content.category.label}`, 100);
+      res = await post({ ...body, thread_name: threadName });
+    }
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Discord webhook hatası: ${res.status} ${res.statusText} ${text}`);
   }
+}
+
+// Webhook'a tek bir POST isteği atar.
+function post(body) {
+  return fetch(WEBHOOK_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
