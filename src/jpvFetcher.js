@@ -67,12 +67,13 @@ async function apiGet(path) {
 }
 
 // ───────────────────── Video -> payload eşleştirme ─────────────────────
-const LANG = {
-  tur: "Türkçe", eng: "İngilizce", en: "İngilizce", und: "Orijinal", mul: "Çok dilli",
-  ja: "Japonca", jpn: "Japonca", kor: "Korece", ger: "Almanca", de: "Almanca",
-  fre: "Fransızca", fr: "Fransızca", spa: "İspanyolca", rus: "Rusça", ara: "Arapça", ita: "İtalyanca",
-};
-const lang = (c) => LANG[String(c || "").toLowerCase()] || String(c || "").toUpperCase();
+// Dil değeri olarak ISO kodu (büyük harf) kullanılır: tur -> TUR, eng -> ENG.
+// "und"/boş (belirsiz, genelde orijinal ses) -> "Original".
+function lang(c) {
+  const code = String(c || "").toLowerCase();
+  if (!code || code === "und") return "Original";
+  return code.toUpperCase();
+}
 const QR = { "4k": 2160, "2160p": 2160, "1440p": 1440, "1080p": 1080, "720p": 720, "480p": 480, "360p": 360 };
 const qrank = (q) => QR[String(q).toLowerCase()] || parseInt(q) || 0;
 function humanDuration(s) {
@@ -100,7 +101,10 @@ function mapVideo(v) {
     .map((x) => x.quality)
     .sort((a, b) => qrank(b) - qrank(a));
   const audio = (v.audio_languages || [])
-    .map((a) => lang(a.language) + (a.is_original ? " (orijinal)" : ""))
+    .map((a) => {
+      const s = lang(a.language);
+      return a.is_original && s !== "Original" ? `${s} (Original)` : s;
+    })
     .join(", ");
   const subs = (v.subtitle_languages || []).map((s) => lang(s.language || s)).join(", ");
 

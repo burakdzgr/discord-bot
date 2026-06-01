@@ -109,14 +109,14 @@ function detectCategory(...texts) {
   const haystack = texts.filter(Boolean).join(" ").toLowerCase();
   const rules = [
     { key: "anime", words: ["anime", "anim", "manga"], label: "Anime", emoji: "🌸", color: 0xff6fb5 },
-    { key: "adult", words: ["adult", "yetişkin", "yetiskin", "18+", "xxx", "porn", "erotik"], label: "Adult (18+)", emoji: "🔞", color: 0xc0392b },
-    { key: "dizi", words: ["dizi", "series", "tv", "show", "season", "sezon", "episode", "bölüm", "bolum"], label: "Dizi", emoji: "📺", color: 0x5865f2 },
-    { key: "film", words: ["film", "movie", "sinema", "cinema"], label: "Film", emoji: "🎬", color: 0xf1c40f },
+    { key: "adult", words: ["adult", "yetişkin", "yetiskin", "18+", "xxx", "porn", "erotik"], label: "Adult", emoji: "🔞", color: 0xc0392b },
+    { key: "dizi", words: ["dizi", "series", "tv", "show", "season", "sezon", "episode", "bölüm", "bolum"], label: "Series", emoji: "📺", color: 0x5865f2 },
+    { key: "film", words: ["film", "movie", "sinema", "cinema"], label: "Movie", emoji: "🎬", color: 0xf1c40f },
   ];
   for (const rule of rules) {
     if (rule.words.some((w) => haystack.includes(w))) return rule;
   }
-  return { key: "icerik", words: [], label: "Yeni İçerik", emoji: "✨", color: 0x2ecc71 };
+  return { key: "icerik", words: [], label: "Content", emoji: "✨", color: 0x2ecc71 };
 }
 
 // Ana fonksiyon: ham payload -> normalize edilmiş içerik nesnesi.

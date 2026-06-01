@@ -18,21 +18,21 @@ function buildEmbed(content) {
 
   const embed = {
     author: { name: trunc(tags.join(" · "), 256) },
-    title: trunc(title || "İsimsiz içerik", 256),
+    title: trunc(title || "Untitled", 256),
     color: category.color,
     timestamp: new Date().toISOString(),
-    footer: { text: "Arşive eklendi" },
+    footer: { text: "Added to archive" },
   };
 
   if (description) embed.description = trunc(description, 4000);
   if (url && /^https?:\/\//i.test(url)) embed.url = url;          // başlık tıklanabilir olur
 
-  // Detay alanları: kalite / ses / altyazı / süre (yalnızca dolu olanlar, yan yana).
+  // Detay alanları: quality / audio / subtitle / duration (yalnızca dolu olanlar, yan yana).
   const fields = [];
-  if (content.quality) fields.push({ name: "🎞️ Kalite", value: trunc(content.quality, 256), inline: true });
-  if (content.audio) fields.push({ name: "🔊 Ses", value: trunc(content.audio, 256), inline: true });
-  if (content.subtitles) fields.push({ name: "💬 Altyazı", value: trunc(content.subtitles, 256), inline: true });
-  if (content.duration) fields.push({ name: "⏱️ Süre", value: trunc(content.duration, 256), inline: true });
+  if (content.quality) fields.push({ name: "🎞️ Quality", value: trunc(content.quality, 256), inline: true });
+  if (content.audio) fields.push({ name: "🔊 Audio", value: trunc(content.audio, 256), inline: true });
+  if (content.subtitles) fields.push({ name: "💬 Subtitle", value: trunc(content.subtitles, 256), inline: true });
+  if (content.duration) fields.push({ name: "⏱️ Duration", value: trunc(content.duration, 256), inline: true });
   if (fields.length) embed.fields = fields;
 
   if (image && /^https?:\/\//i.test(image)) embed.image = { url: image };
