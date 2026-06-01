@@ -1,9 +1,9 @@
 import "dotenv/config";
 import express from "express";
-import { extractContent, deriveTags } from "./extractor.js";
-import { sendToDiscord } from "./discord.js";
-import { initBot, tagIdsFor } from "./discordBot.js";
-import { resolveRoute, routeSummary } from "./config.js";
+import { initBot } from "./discordBot.js";
+import { routeSummary } from "./config.js";
+import { processContent } from "./process.js";
+import { startFetcher, fetcherEnabled, postLatest } from "./jpvFetcher.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const CALLBACK_SECRET = process.env.CALLBACK_SECRET?.trim();
@@ -47,20 +47,7 @@ app.post(["/callback", "/webhook"], async (req, res) => {
   }
 
   try {
-    const content = extractContent(payload);
-
-    // type (ya da algılanan kategori) -> hangi kanala gideceğini belirle.
-    const route = resolveRoute(content.type, content.category.key);
-    if (!route) {
-      const msg = `'${content.type || content.category.label}' türü için tanımlı kanal/webhook yok.`;
-      console.error("❌ Yönlendirme hatası:", msg);
-      return res.status(400).json({ ok: false, error: msg });
-    }
-
-    const tagNames = deriveTags(payload);
-    const tagIds = tagIdsFor(route.channelId, tagNames); // bot kapalıysa boş döner
-    await sendToDiscord(route, content, payload, tagIds);
-
+    const { content, route, tagNames } = await processContent(payload);
     console.log(
       `✅ [${route.label}] gönderildi: ${content.title || "(başlık tanınamadı)"} [${content.category.label}]` +
         (tagNames.length ? ` · etiketler: ${tagNames.join(", ")}` : "")
@@ -80,6 +67,28 @@ app.post(["/callback", "/webhook"], async (req, res) => {
   }
 });
 
+// Manuel test tetikleyici: JPV'den en son N içeriği çekip gönderir.
+//   GET /fetch-latest?type=movie&target=Movie&count=1
+// (CALLBACK_SECRET açıksa ?secret=... gerekir.)
+app.get("/fetch-latest", async (req, res) => {
+  if (CALLBACK_SECRET && req.query.secret !== CALLBACK_SECRET) {
+    return res.status(401).json({ ok: false, error: "unauthorized" });
+  }
+  if (!fetcherEnabled()) {
+    return res.status(400).json({ ok: false, error: "JPV fetcher kapalı (JPV_EMAIL/JPV_PASSWORD yok)." });
+  }
+  try {
+    const src = String(req.query.type || "movie");
+    const target = String(req.query.target || "Movie");
+    const count = Math.min(Number(req.query.count) || 1, 10);
+    const sent = await postLatest(src, target, count);
+    return res.json({ ok: true, sent });
+  } catch (err) {
+    console.error("❌ fetch-latest hatası:", err.message);
+    return res.status(502).json({ ok: false, error: err.message });
+  }
+});
+
 // Beklenmeyen hataların sunucuyu düşürmesini engelle (7/24 çalışsın).
 process.on("unhandledRejection", (err) => console.error("unhandledRejection:", err));
 process.on("uncaughtException", (err) => console.error("uncaughtException:", err));
@@ -92,7 +101,10 @@ app.listen(PORT, () => {
   console.log(`🔐 Güvenlik:      ${CALLBACK_SECRET ? "AÇIK (secret gerekli)" : "KAPALI (test modu)"}`);
   console.log("📡 Kanal yönlendirme:");
   console.log(routeSummary());
+  console.log(`📡 JPV fetcher:    ${fetcherEnabled() ? "AÇIK" : "KAPALI (JPV_EMAIL/JPV_PASSWORD yok)"}`);
   console.log("────────────────────────────────────────────");
   // Bot Token varsa tüm kanalların etiketlerini yükle + Trending döngülerini başlat.
   initBot();
+  // JPV kimlik bilgileri varsa periyodik çekmeyi başlat.
+  startFetcher();
 });

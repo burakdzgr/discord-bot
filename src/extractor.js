@@ -146,6 +146,16 @@ export function extractContent(payload) {
   const type =
     asText(findValue(payload, ["type", "tip", "contenttype", "mediatype"]));
 
+  // Ses / altyazı / süre — embed detayında gösterilir.
+  const audio =
+    asText(findValue(payload, ["audio", "ses", "audiolanguages", "audiolanguage", "dublaj", "seslendirme"]));
+
+  const subtitles =
+    asText(findValue(payload, ["subtitles", "subtitle", "altyazi", "altyazı", "subtitlelanguages", "subs"]));
+
+  const duration =
+    asText(findValue(payload, ["duration", "sure", "süre", "runtime", "length"]));
+
   // Kategori tahmini: sadece ilk eşleşen "tür" değil, tüm kategori-benzeri alanları
   // (tip/tür/kategori/genre vb.) + başlık + açıklamayı birlikte değerlendir.
   const categoryHints = collectValues(payload, [
@@ -153,7 +163,7 @@ export function extractContent(payload) {
   ]);
   const category = detectCategory(categoryHints, title, description);
 
-  return { title, description, image, url, rawType, year, quality, type, category };
+  return { title, description, image, url, rawType, year, quality, type, audio, subtitles, duration, category };
 }
 
 // Payload'dan uygulanacak FORUM ETİKETİ adlarını türetir.

@@ -49,3 +49,14 @@ services:
         value: "10"
       - key: TRENDING_INTERVAL_MIN
         value: "30"
+      # JPV video API'sinden otomatik çekme (e-posta+şifre gizli, panelden gir).
+      - key: JPV_EMAIL
+        sync: false
+      - key: JPV_PASSWORD
+        sync: false
+      - key: JPV_API_BASE
+        value: https://japierdolevid.com/api/v1
+      - key: JPV_POLL_MIN
+        value: "5"
+      - key: JPV_TYPES
+        value: movie:Movie,series:Series

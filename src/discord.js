@@ -7,15 +7,14 @@ const AVATAR_URL = process.env.BOT_AVATAR_URL?.trim() || undefined;
 // Normalize edilmiş içerikten "sinematik / sade" bir Discord embed'i kurar:
 // üstte küçük kategori etiketi, büyük başlık, kısa açıklama, büyük kapak görseli.
 function buildEmbed(content) {
-  const { title, description, image, url, rawType, year, quality, category } = content;
+  const { title, description, image, url, rawType, year, category } = content;
 
-  // Üst etiket satırı (author): "🎬 Film · Bilim Kurgu · 2010 · 1080p"
+  // Üst etiket satırı (author): "🎬 Film · Bilim Kurgu · 2010"
   const tags = [`${category.emoji} ${category.label}`];
   if (rawType && !sameWord(rawType, category.label) && !sameWord(rawType, category.key)) {
     tags.push(rawType);
   }
   if (year) tags.push(year);
-  if (quality) tags.push(quality);
 
   const embed = {
     author: { name: trunc(tags.join(" · "), 256) },
@@ -27,6 +26,15 @@ function buildEmbed(content) {
 
   if (description) embed.description = trunc(description, 4000);
   if (url && /^https?:\/\//i.test(url)) embed.url = url;          // başlık tıklanabilir olur
+
+  // Detay alanları: kalite / ses / altyazı / süre (yalnızca dolu olanlar, yan yana).
+  const fields = [];
+  if (content.quality) fields.push({ name: "🎞️ Kalite", value: trunc(content.quality, 256), inline: true });
+  if (content.audio) fields.push({ name: "🔊 Ses", value: trunc(content.audio, 256), inline: true });
+  if (content.subtitles) fields.push({ name: "💬 Altyazı", value: trunc(content.subtitles, 256), inline: true });
+  if (content.duration) fields.push({ name: "⏱️ Süre", value: trunc(content.duration, 256), inline: true });
+  if (fields.length) embed.fields = fields;
+
   if (image && /^https?:\/\//i.test(image)) embed.image = { url: image };
 
   return embed;
