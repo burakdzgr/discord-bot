@@ -1,14 +1,15 @@
-# Callback API Sözleşmesi (dış arşiv sistemi için)
+# Callback API Sözleşmesi (opsiyonel)
 
-Dış sistem, arşive **yeni içerik eklediğinde** (veya güncellediğinde) aşağıdaki adrese
-bir HTTP **POST** isteği atar. Bot bu içeriği Discord forum kanalına gönderir.
+> Botun **asıl veri kaynağı** JPV video API'sidir (otomatik çekme — bkz. [VPS.md](VPS.md)).
+> Bu callback, İSTERSEN başka bir dış sistemin de içerik göndermesi için duruyor; zorunlu değil.
+
+Dış sistem, arşive **yeni içerik eklediğinde** aşağıdaki adrese bir HTTP **POST** atar.
+Bot bu içeriği ilgili Discord forum kanalına gönderir.
 
 ```
-POST  https://discord-archive-bot.onrender.com/callback
+POST  https://SENIN-VPS-ADRESIN/callback        (VPS alan adın / IP'n)
 Content-Type: application/json
 ```
-
-> Not: Kendi VPS'ine taşınınca adres değişir; sadece alan adı/host değişir, gövde aynı kalır.
 
 ---
 
@@ -34,13 +35,11 @@ Sadece `title` zorunludur. Görsel şiddetle önerilir (kapak için).
   "url": "https://ornek.com/izle/inception",
   "category": "film",
   "year": 2010,
-  "quality": "1080p",
-  "tags": ["New Release", "US", "Dubbed"],
-  "region": "US",
-  "audio": "dubbed",
-  "isNew": true,
-  "id": "tt1375666",
-  "event": "added"
+  "quality": "1080p, 720p",
+  "audio": "Türkçe",
+  "subtitles": "İngilizce",
+  "duration": "2sa 28dk",
+  "id": "tmdb:27205"
 }
 ```
 
@@ -59,13 +58,11 @@ Sadece `title` zorunludur. Görsel şiddetle önerilir (kapak için).
 | `description` | string         | – | Kısa özet. Embed içinde gösterilir. |
 | `url`         | string (URL)   | – | İçerik/izleme linki. Başlık tıklanabilir olur. |
 | `year`        | number/string  | – | Yapım yılı. |
-| `quality`     | string         | – | `1080p`, `4K`, `720p` vb. |
-| `tags`        | string[]       | – | Doğrudan **forum etiket adları** (aşağıdaki listeden). Bot eşleşenleri uygular. |
-| `region`      | string         | – | `global` \| `asia` \| `eu` \| `us` → ilgili bölge etiketine çevrilir. |
-| `audio`       | string         | – | `dubbed` \| `subbed` \| `multi` → Dubbed / Subbed / Multi Audio etiketine çevrilir. |
-| `isNew`       | boolean        | – | `true` ise **New Release** etiketi eklenir. (`event: "added"` de aynı etkiyi yapar.) |
+| `quality`     | string         | – | `1080p`, `4K`, `720p` vb. Embed'de gösterilir. |
+| `audio`       | string         | – | Ses dil(ler)i, örn. `Türkçe`, `Orijinal`. Embed'de gösterilir. |
+| `subtitles`   | string         | – | Altyazı dil(ler)i. Embed'de gösterilir. |
+| `duration`    | string         | – | Süre, örn. `1sa 45dk`. Embed'de gösterilir. |
 | `id`          | string         | – | Dış sistemdeki **benzersiz kimlik**. Tekrarları/güncellemeleri ayırmak için. |
-| `event`       | string         | – | `added` (varsayılan) \| `updated`. |
 
 > Alan adları esnektir: Türkçe/İngilizce karşılıklar da tanınır (`baslik`, `ad`, `aciklama`,
 > `poster`, `gorsel`, `tur`, `kategori`, `link`, `yil`, `kalite` …) ve iç içe nesnelerde
@@ -88,28 +85,13 @@ Sadece `title` zorunludur. Görsel şiddetle önerilir (kapak için).
 - `type` yoksa içerikten (kategori/metin) tahmin edilir.
 - Tanınmayan veya kanalı tanımlı olmayan bir tür **varsayılan kanala** düşer (kaybolmaz).
 
-## Forum etiketleri (kanaldaki mevcut etiketler)
-
-`tags` dizisine bu adlardan istediklerini koyabilirler (büyük/küçük harf önemsiz):
-
-```
-New Release · Trending · Featured · Classic · Global · Asia · EU · US · Multi Audio · Dubbed · Subbed
-```
-
-**Etiket kuralları:**
-- **New Release** → yeni eklenenlere otomatik (veya `isNew: true`). "New Release" etiketine tıklayan herkes yeni içerikleri görür.
-- **Trending** → bizim botumuz **otomatik** yönetir (en çok beğeni alan postlara eklenir); dış sistemin göndermesine gerek yok.
-- **Global / Asia / EU / US** → `region` alanından ya da `tags` ile.
-- **Multi Audio / Dubbed / Subbed** → `audio` alanından ya da `tags` ile.
-- **Featured / Classic** → sadece `tags` ile (isterlerse).
-
 ---
 
 ## Yanıtlar
 
 | Durum | HTTP | Gövde |
 |-------|------|-------|
-| Başarılı | `200` | `{"ok":true,"title":"Inception","type":"Movie","channel":"Film","category":"Film","tags":["New Release","US"]}` |
+| Başarılı | `200` | `{"ok":true,"title":"Inception","type":"Movie","channel":"Film","category":"Film"}` |
 | Boş/geçersiz gövde | `400` | `{"ok":false,"error":"..."}` |
 | Discord'a iletilemedi | `502` | `{"ok":false,"error":"..."}` |
 | (Güvenlik açıkken) yetkisiz | `401` | `{"ok":false,"error":"unauthorized"}` |
@@ -134,38 +116,38 @@ veya     gövdede "secret": "<anahtar>"
 
 **cURL:**
 ```bash
-curl -X POST https://discord-archive-bot.onrender.com/callback \
+curl -X POST https://SENIN-VPS-ADRESIN/callback \
   -H "Content-Type: application/json" \
-  -d '{"title":"Inception","category":"film","year":2010,"quality":"1080p","image":"https://.../inception.jpg","url":"https://.../izle","tags":["New Release","US","Dubbed"]}'
+  -d '{"type":"Movie","title":"Inception","year":2010,"quality":"1080p","audio":"Türkçe","image":"https://.../inception.jpg","url":"https://.../izle"}'
 ```
 
 **Node.js:**
 ```js
-await fetch("https://discord-archive-bot.onrender.com/callback", {
+await fetch("https://SENIN-VPS-ADRESIN/callback", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
+    type: "Movie",
     title: "Inception",
-    category: "film",
     year: 2010,
     image: "https://.../inception.jpg",
     url: "https://.../izle",
-    tags: ["New Release", "US", "Dubbed"],
+    audio: "Türkçe",
   }),
 });
 ```
 
 **PHP:**
 ```php
-$ch = curl_init("https://discord-archive-bot.onrender.com/callback");
+$ch = curl_init("https://SENIN-VPS-ADRESIN/callback");
 curl_setopt_array($ch, [
   CURLOPT_POST => true,
   CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
   CURLOPT_POSTFIELDS => json_encode([
+    "type" => "Movie",
     "title" => "Inception",
-    "category" => "film",
     "image" => "https://.../inception.jpg",
-    "tags" => ["New Release", "US"],
+    "quality" => "1080p",
   ]),
   CURLOPT_RETURNTRANSFER => true,
 ]);

@@ -46,6 +46,7 @@ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/XXXX/YYYY
 FORUM_CHANNEL_ID=
 
 # Tür bazlı kanallar (kullandıklarını doldur, gerisini boş bırak)
+# *_CHANNEL_ID forum kanalı için (post başlığı doğrudan gönderilsin diye); webhook tek başına yeter.
 MOVIE_WEBHOOK_URL=
 MOVIE_CHANNEL_ID=
 SERIES_WEBHOOK_URL=
@@ -55,19 +56,20 @@ ANIME_CHANNEL_ID=
 ADULT_WEBHOOK_URL=
 ADULT_CHANNEL_ID=
 
-# Forum etiketleri + Trending (tek token tüm kanalları yönetir)
-BOT_TOKEN=
-TRENDING_TAG_NAME=Trending
-TRENDING_TOP_N=10
-TRENDING_INTERVAL_MIN=30
+# JPV video API'sinden otomatik çekme (dolunca: ilk turda son 10 video + sonra yeniler)
+JPV_EMAIL=
+JPV_PASSWORD=
+JPV_API_BASE=https://japierdolevid.com/api/v1
+JPV_POLL_MIN=5
+JPV_SEED_COUNT=10
 
 # Güvenlik (boşsa kapalı)
 CALLBACK_SECRET=
 EOF
 ```
 
-> `nano .env` ile düzenleyebilirsin. Webhook/kanal ID alımı için bkz. [BOT_SETUP.md](BOT_SETUP.md).
-> Güvenlik açmak istediğinde `CALLBACK_SECRET` satırına bir gizli anahtar yaz.
+> `nano .env` ile düzenleyebilirsin. Webhook için: ilgili kanal → Ayarlar → Entegrasyonlar → Webhooks → Yeni Webhook → URL'yi kopyala.
+> `JPV_EMAIL`/`JPV_PASSWORD` dolunca bot videoları otomatik çeker. Güvenlik için `CALLBACK_SECRET`'a bir anahtar yaz.
 
 ## 4. PM2 ile başlat (7/24 + reboot sonrası otomatik)
 
