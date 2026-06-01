@@ -45,6 +45,30 @@ function isUsable(value) {
   return false;
 }
 
+// Verilen anahtarlarla eşleşen TÜM değerleri (iç içe nesnelerde de) toplayıp
+// tek bir metin olarak döndürür. Kategori tahmini için birden çok ipucu gerekir
+// (ör. hem "tur": "Bilim Kurgu" hem "kategori": "Film" aynı anda değerlendirilir).
+function collectValues(obj, candidates, { maxDepth = 4 } = {}) {
+  const wanted = candidates.map(normalizeKey);
+  const found = [];
+  const seen = new Set();
+
+  function walk(node, depth) {
+    if (!node || typeof node !== "object" || depth > maxDepth || seen.has(node)) return;
+    seen.add(node);
+    for (const [key, value] of Object.entries(node)) {
+      if (wanted.includes(normalizeKey(key))) {
+        const text = asText(value);
+        if (text) found.push(text);
+      }
+      if (value && typeof value === "object") walk(value, depth + 1);
+    }
+  }
+
+  walk(obj, 0);
+  return found.join(" ");
+}
+
 // Bir değeri okunabilir metne çevirir (dizi/nesne ise düzleştirir).
 function asText(value) {
   if (value === null || value === undefined) return undefined;
@@ -94,7 +118,12 @@ export function extractContent(payload) {
   const quality =
     asText(findValue(payload, ["quality", "kalite", "resolution", "cozunurluk", "çözünürlük"]));
 
-  const category = detectCategory(rawType, title, description);
+  // Kategori tahmini: sadece ilk eşleşen "tür" değil, tüm kategori-benzeri alanları
+  // (tip/tür/kategori/genre vb.) + başlık + açıklamayı birlikte değerlendir.
+  const categoryHints = collectValues(payload, [
+    "type", "tur", "tür", "category", "kategori", "genre", "genres", "contenttype", "mediatype", "tags", "etiket", "etiketler",
+  ]);
+  const category = detectCategory(categoryHints, title, description);
 
   return { title, description, image, url, rawType, year, quality, category };
 }
