@@ -62,7 +62,8 @@ export async function sendToDiscord(content, rawPayload) {
   if (res.status === 400) {
     const errText = await res.clone().text().catch(() => "");
     if (errText.includes("220001")) {
-      const threadName = trunc(`${content.category.emoji} ${content.title || content.category.label}`, 100);
+      // Forum post başlığı: sade, sadece içerik adı (emoji yok). Kategori emojisi embed içinde kalır.
+      const threadName = trunc(content.title || content.category.label, 100);
       res = await post({ ...body, thread_name: threadName });
     }
   }
