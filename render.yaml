@@ -1,0 +1,19 @@
+# Render.com için tek tıkla deploy tanımı.
+# Render hesabında "New > Blueprint" ile bu repoyu bağladığında otomatik okunur.
+services:
+  - type: web
+    name: discord-archive-bot
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/index.js
+    healthCheckPath: /
+    envVars:
+      # DISCORD_WEBHOOK_URL'i Render panelinden (gizli) gir — repoya yazma.
+      - key: DISCORD_WEBHOOK_URL
+        sync: false
+      - key: BOT_USERNAME
+        value: Arşiv Botu
+      # Güvenlik açmak istediğinde panelden doldur (boşsa kapalı).
+      - key: CALLBACK_SECRET
+        sync: false
