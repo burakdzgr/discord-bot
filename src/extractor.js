@@ -38,6 +38,30 @@ function normalizeKey(key) {
   return String(key).toLowerCase().replace(/[\s_\-.]/g, "");
 }
 
+// findValue gibi ama isUsable filtresi YOK: eşleşen ilk anahtarın ham değerini
+// (dizi/nesne dahil) döndürür. Etiket dizileri (tags: [...]) için gerekli.
+function findRawValue(obj, candidates, { maxDepth = 4 } = {}) {
+  const wanted = candidates.map(normalizeKey);
+  const seen = new Set();
+
+  function walk(node, depth) {
+    if (!node || typeof node !== "object" || depth > maxDepth || seen.has(node)) return undefined;
+    seen.add(node);
+    for (const [key, value] of Object.entries(node)) {
+      if (wanted.includes(normalizeKey(key)) && value !== null && value !== undefined) return value;
+    }
+    for (const value of Object.values(node)) {
+      if (value && typeof value === "object") {
+        const found = walk(value, depth + 1);
+        if (found !== undefined) return found;
+      }
+    }
+    return undefined;
+  }
+
+  return walk(obj, 0);
+}
+
 function isUsable(value) {
   if (value === null || value === undefined) return false;
   if (typeof value === "string") return value.trim().length > 0;
@@ -126,4 +150,53 @@ export function extractContent(payload) {
   const category = detectCategory(categoryHints, title, description);
 
   return { title, description, image, url, rawType, year, quality, category };
+}
+
+// Payload'dan uygulanacak FORUM ETİKETİ adlarını türetir.
+// (discordBot.js bunları kanaldaki gerçek etiket ID'lerine çevirir; eşleşmeyenler yok sayılır.)
+// "Trending" buradan gelmez — onu bot beğenilere göre otomatik yönetir.
+export function deriveTags(payload) {
+  const names = new Set();
+
+  // 1) Doğrudan gönderilen etiket adları (dizi veya virgüllü metin).
+  const explicit = findRawValue(payload, ["tags", "etiketler", "etiket", "labels"]);
+  if (Array.isArray(explicit)) {
+    explicit.forEach((t) => {
+      const s = asText(t);
+      if (s) names.add(s);
+    });
+  } else if (typeof explicit === "string") {
+    explicit.split(/[,;|]/).forEach((t) => {
+      const s = t.trim();
+      if (s) names.add(s);
+    });
+  }
+
+  // 2) New Release: güncelleme değilse (yeni içerikse) otomatik eklenir.
+  const event = asText(findValue(payload, ["event", "action", "durum"]))?.toLowerCase();
+  const isNewRaw = findValue(payload, ["isnew", "yeni", "new"]);
+  const isUpdate =
+    event === "updated" || event === "update" || event === "guncelleme" ||
+    isNewRaw === false || isNewRaw === "false";
+  if (!isUpdate) names.add("New Release");
+
+  // 3) Bölge -> etiket.
+  const region = asText(findValue(payload, ["region", "bolge", "bölge", "ulke", "ülke", "country"]))?.toLowerCase();
+  const regionMap = {
+    global: "Global", world: "Global", dunya: "Global",
+    asia: "Asia", asya: "Asia",
+    eu: "EU", europe: "EU", avrupa: "EU",
+    us: "US", usa: "US", abd: "US", america: "US", amerika: "US",
+  };
+  if (region && regionMap[region]) names.add(regionMap[region]);
+
+  // 4) Ses -> etiket (Multi Audio / Dubbed / Subbed).
+  const audio = asText(findValue(payload, ["audio", "ses", "dub", "dublaj", "altyazi", "altyazı", "subtitle"]))?.toLowerCase();
+  if (audio) {
+    if (/multi|çoklu|coklu/.test(audio)) names.add("Multi Audio");
+    else if (/dub|dublaj|seslendir/.test(audio)) names.add("Dubbed");
+    else if (/sub|altyaz/.test(audio)) names.add("Subbed");
+  }
+
+  return [...names];
 }

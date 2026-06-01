@@ -1,7 +1,8 @@
 import "dotenv/config";
 import express from "express";
-import { extractContent } from "./extractor.js";
+import { extractContent, deriveTags } from "./extractor.js";
 import { sendToDiscord } from "./discord.js";
+import { initBot, tagIdsFor } from "./discordBot.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 const CALLBACK_SECRET = process.env.CALLBACK_SECRET?.trim();
@@ -46,10 +47,15 @@ app.post(["/callback", "/webhook"], async (req, res) => {
 
   try {
     const content = extractContent(payload);
-    await sendToDiscord(content, payload);
-    console.log(`✅ Discord'a gönderildi: ${content.title || "(başlık tanınamadı)"} [${content.category.label}]`);
+    const tagNames = deriveTags(payload);
+    const tagIds = tagIdsFor(tagNames); // bot kapalıysa boş döner
+    await sendToDiscord(content, payload, tagIds);
+    console.log(
+      `✅ Discord'a gönderildi: ${content.title || "(başlık tanınamadı)"} [${content.category.label}]` +
+        (tagNames.length ? ` · etiketler: ${tagNames.join(", ")}` : "")
+    );
     // Dış sisteme hızlı yanıt dön.
-    return res.json({ ok: true, title: content.title ?? null, category: content.category.label });
+    return res.json({ ok: true, title: content.title ?? null, category: content.category.label, tags: tagNames });
   } catch (err) {
     console.error("❌ Gönderim hatası:", err.message);
     return res.status(502).json({ ok: false, error: err.message });
@@ -62,9 +68,11 @@ process.on("uncaughtException", (err) => console.error("uncaughtException:", err
 
 app.listen(PORT, () => {
   console.log("────────────────────────────────────────────");
-  console.log(`🤖 Arşiv botu ayakta — port ${PORT}`);
+  console.log(`🤖 Drakkar Archive botu ayakta — port ${PORT}`);
   console.log(`📥 Callback URL:  http://localhost:${PORT}/callback`);
   console.log(`💚 Sağlık:        http://localhost:${PORT}/`);
   console.log(`🔐 Güvenlik:      ${CALLBACK_SECRET ? "AÇIK (secret gerekli)" : "KAPALI (test modu)"}`);
   console.log("────────────────────────────────────────────");
+  // Bot Token varsa etiketleri yükle + Trending döngüsünü başlat (yoksa sessizce atlar).
+  initBot();
 });

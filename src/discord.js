@@ -43,8 +43,13 @@ function trunc(str, max) {
   return s.length > max ? s.slice(0, max - 1) + "…" : s;
 }
 
-// İçeriği Discord'a gönderir. Hata olursa fırlatır (çağıran tarafta loglanır).
-export async function sendToDiscord(content, rawPayload) {
+// FORUM_CHANNEL_ID tanımlıysa webhook'un forum kanalına bağlı olduğunu biliyoruz;
+// böylece her seferinde başarısız ilk isteği denemeden doğrudan thread_name ile göndeririz.
+const FORUM_MODE = Boolean(process.env.FORUM_CHANNEL_ID?.trim());
+
+// İçeriği Discord'a gönderir. appliedTags: uygulanacak forum etiketi ID'leri (opsiyonel).
+// Hata olursa fırlatır (çağıran tarafta loglanır).
+export async function sendToDiscord(content, rawPayload, appliedTags = []) {
   if (!WEBHOOK_URL) {
     throw new Error("DISCORD_WEBHOOK_URL tanımlı değil (.env dosyasını kontrol et).");
   }
@@ -63,17 +68,23 @@ export async function sendToDiscord(content, rawPayload) {
     body.content = "⚠️ İçerik alanları otomatik tanınamadı, ham veri:\n```json\n" + raw + "\n```";
   }
 
-  // İlk deneme: normal metin kanalı varsayımıyla gönder.
-  let res = await post(body);
+  // Forum post başlığı: sade, sadece içerik adı (emoji yok). Kategori emojisi embed içinde.
+  const threadName = trunc(content.title || content.category.label, 100);
 
-  // Webhook bir FORUM/MEDIA kanalına bağlıysa Discord thread_name ister (kod 220001).
-  // Bu durumda her içerik için bir forum gönderisi başlığı ekleyip tekrar deneriz.
-  if (res.status === 400) {
-    const errText = await res.clone().text().catch(() => "");
-    if (errText.includes("220001")) {
-      // Forum post başlığı: sade, sadece içerik adı (emoji yok). Kategori emojisi embed içinde kalır.
-      const threadName = trunc(content.title || content.category.label, 100);
-      res = await post({ ...body, thread_name: threadName });
+  // Forum gönderisi gövdesi (başlık + varsa etiketler).
+  const forumBody = { ...body, thread_name: threadName };
+  if (appliedTags.length) forumBody.applied_tags = appliedTags;
+
+  let res;
+  if (FORUM_MODE) {
+    // Forum olduğunu biliyoruz — doğrudan gönder.
+    res = await post(forumBody);
+  } else {
+    // Kanal tipini bilmiyoruz: önce normal dene, forum hatasında (220001) thread_name ile tekrarla.
+    res = await post(body);
+    if (res.status === 400) {
+      const errText = await res.clone().text().catch(() => "");
+      if (errText.includes("220001")) res = await post(forumBody);
     }
   }
 

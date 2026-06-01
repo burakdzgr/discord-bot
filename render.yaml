@@ -20,3 +20,15 @@ services:
       # Güvenlik açmak istediğinde panelden doldur (boşsa kapalı).
       - key: CALLBACK_SECRET
         sync: false
+      # Forum etiketleri + Trending için Bot Token ve forum kanal ID'si (gizli, panelden gir).
+      - key: BOT_TOKEN
+        sync: false
+      - key: FORUM_CHANNEL_ID
+        sync: false
+      # Trending ayarları (varsayılanlar yeterli; istersen değiştir).
+      - key: TRENDING_TAG_NAME
+        value: Trending
+      - key: TRENDING_TOP_N
+        value: "10"
+      - key: TRENDING_INTERVAL_MIN
+        value: "30"
